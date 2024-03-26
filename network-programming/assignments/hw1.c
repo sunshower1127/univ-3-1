@@ -1,7 +1,6 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <stdio.h>
-#include <string.h>
 
 int main()
 {
@@ -21,12 +20,12 @@ int main()
     // res로 도메인 네임에 연결된 ip주소들을 가져옴.
     getaddrinfo(domain_name, NULL, &hints, &res);
 
-    for(struct addrinfo *p = res; p != NULL; p = p->ai_next)
+    for (struct addrinfo *p = res; p != NULL; p = p->ai_next)
     {
         char output[100];
 
         // 현재 선택된 주소가 IPv4이면,
-        if(p->ai_family == AF_INET)
+        if (p->ai_family == AF_INET)
         {
             // 현재 선택된 주소를 IPv4 포맷으로 변환해서 출력함.
             inet_ntop(p->ai_family,

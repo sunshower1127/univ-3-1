@@ -61,7 +61,7 @@ int main()
 {
 #if defined(_WIN32)
     WSADATA d;
-    if(WSAStartup(MAKEWORD(2, 2), &d))
+    if (WSAStartup(MAKEWORD(2, 2), &d))
     {
         fprintf(stderr, "Failed to initialize.\n");
         return 1;
@@ -82,14 +82,14 @@ int main()
     SOCKET socket_listen;
     socket_listen = socket(bind_address->ai_family, bind_address->ai_socktype,
                            bind_address->ai_protocol);
-    if(!ISVALIDSOCKET(socket_listen))
+    if (!ISVALIDSOCKET(socket_listen))
     {
         fprintf(stderr, "socket() failed. (%d)\n", GETSOCKETERRNO());
         return 1;
     }
 
     printf("Binding socket to local address...\n");
-    if(bind(socket_listen, bind_address->ai_addr, bind_address->ai_addrlen))
+    if (bind(socket_listen, bind_address->ai_addr, bind_address->ai_addrlen))
     {
         fprintf(stderr, "bind() failed. (%d)\n", GETSOCKETERRNO());
         return 1;
@@ -97,7 +97,7 @@ int main()
     freeaddrinfo(bind_address);
 
     printf("Listening...\n");
-    if(listen(socket_listen, 10) < 0)
+    if (listen(socket_listen, 10) < 0)
     {
         fprintf(stderr, "listen() failed. (%d)\n", GETSOCKETERRNO());
         return 1;
@@ -108,7 +108,7 @@ int main()
     socklen_t client_len = sizeof(client_address);
     SOCKET socket_client =
         accept(socket_listen, (struct sockaddr *)&client_address, &client_len);
-    if(!ISVALIDSOCKET(socket_client))
+    if (!ISVALIDSOCKET(socket_client))
     {
         fprintf(stderr, "accept() failed. (%d)\n", GETSOCKETERRNO());
         return 1;
