@@ -32,14 +32,14 @@ int main(int argc, char *argv[])
 {
 #if defined(_WIN32)
     WSADATA d;
-    if(WSAStartup(MAKEWORD(2, 2), &d))
+    if (WSAStartup(MAKEWORD(2, 2), &d))
     {
         fprintf(stderr, "Failed to initialize.\n");
         return 1;
     }
 #endif
 
-    if(argc < 3)
+    if (argc < 3)
     {
         fprintf(stderr, "usage: tcp_client hostname port\n");
         return 1;
@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
     //   setting = hints(addrinfo)
     //   input = domain_name, port
     //   output = ip_address(addrinfo)
-    if(getaddrinfo(argv[1], argv[2], &hints, &peer_address))
+    if (getaddrinfo(argv[1], argv[2], &hints, &peer_address))
     {
         fprintf(stderr, "getaddrinfo() failed. (%d)\n", GETSOCKETERRNO());
         return 1;
@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
     //   ouput = SOCKET(int) -> 소켓 번호 리턴
     socket_peer = socket(peer_address->ai_family, peer_address->ai_socktype,
                          peer_address->ai_protocol);
-    if(!ISVALIDSOCKET(socket_peer))
+    if (!ISVALIDSOCKET(socket_peer))
     {
         fprintf(stderr, "socket() failed. (%d)\n", GETSOCKETERRNO());
         return 1;
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
     //     socket
     //     ip주소 = addr_info.ai_addr, ai_addrlen
     //   output = 성공시 0, 실패시 -1 리턴
-    if(connect(socket_peer, peer_address->ai_addr, peer_address->ai_addrlen))
+    if (connect(socket_peer, peer_address->ai_addr, peer_address->ai_addrlen))
     {
         fprintf(stderr, "connect() failed. (%d)\n", GETSOCKETERRNO());
         return 1;
@@ -110,26 +110,27 @@ int main(int argc, char *argv[])
     printf("Connected.\n");
     printf("To send data, enter text followed by enter.\n");
 
-    while(1)
+    while (1)
     {
-        fd_set reads;  // 소켓들을 넣을 배열
-        FD_ZERO(&reads);  // 다 0으로 초기화 -> 뭔가 데이터가 받아지면 1이 됨.
-        FD_SET(socket_peer, &reads);  // 클라이언트 소켓을 넣음.
+        fd_set reads;                // 소켓들을 넣을 배열
+        FD_ZERO(&reads);             // 다 0으로 초기화 -> 처음에 0으로 초기화 시켜주는게 좋음.
+        FD_SET(socket_peer, &reads); // 클라이언트 소켓을 넣음.
 #if !defined( \
-    _WIN32)  // 리눅스는 stdin도 fd임. 윈도우는 아니라서 kbhit()을 써야함.
-        FD_SET(0, &reads);  // stdin 소켓을 넣음. -> 키보드 입력을 받기 위함.
+    _WIN32)                // 리눅스는 stdin도 fd임. 윈도우는 아니라서 kbhit()을 써야함.
+        FD_SET(0, &reads); // stdin 소켓을 넣음. -> 키보드 입력을 받기 위함.
 #endif
 
         struct timeval timeout;
         timeout.tv_sec = 0;
-        timeout.tv_usec = 100000;  // 100ms = 0.1s
+        timeout.tv_usec = 100000; // 100ms = 0.1s
 
-        if(select(socket_peer + 1, &reads, 0, 0, &timeout) < 0)
+        if (select(socket_peer + 1, &reads, 0, 0, &timeout) < 0)
         // select -> 여러 소켓을 한번에 관리할 수 있게 해줌.
         //  input = 소켓번호의 최대값(int), 읽기 소켓(fd_set*), 쓰기
         //  소켓(fd_set*),
         //    에러 소켓(fd_set*), timeout(struct timeval*)
-        // output = 에러시 -1 리턴
+        // output = read, write, except중 하나에 넣었을때 그게 가능한 소켓은 1, 아닌 소켓은 0.
+        // 에러시 -1 리턴
         // timeout이 0이면 바로 리턴, 0보다 크면 timeout이 될때까지 기다림.
         // timeout이 NULL이면 무한정 기다림.
         // socket_peer + 1 한 이유는 뒤에 0(stdin)이 있기 때문.
@@ -139,12 +140,11 @@ int main(int argc, char *argv[])
             return 1;
         }
         {
-            // select -> 여러 소켓을 한번에 관리할 수 있게 해줌.
             fprintf(stderr, "select() failed. (%d)\n", GETSOCKETERRNO());
             return 1;
         }
 
-        if(FD_ISSET(socket_peer, &reads))
+        if (FD_ISSET(socket_peer, &reads))
         // FD_ISSET -> reads에 해당 소켓이 1인지 -> 데이터가 들어왔는지
         {
             char read[4096];
@@ -154,7 +154,7 @@ int main(int argc, char *argv[])
             //   output = 받을 버퍼(char*), 버퍼크기(size_t),
             //     받은 바이트 수(ssize_t) 리턴
             int bytes_received = recv(socket_peer, read, 4096, 0);
-            if(bytes_received < 1)
+            if (bytes_received < 1)
             {
                 printf("Connection closed by peer.\n");
                 break;
@@ -164,14 +164,15 @@ int main(int argc, char *argv[])
         }
 
 #if defined(_WIN32)
-        if(_kbhit())
+        if (_kbhit())
         {
 #else
-        if(FD_ISSET(0, &reads))
+        if (FD_ISSET(0, &reads))
         {
 #endif
             char read[4096];
-            if(!fgets(read, 4096, stdin)) break;
+            if (!fgets(read, 4096, stdin))
+                break;
             printf("Sending: %s", read);
             // send
             //   setting = flags
@@ -180,7 +181,7 @@ int main(int argc, char *argv[])
             int bytes_sent = send(socket_peer, read, strlen(read), 0);
             printf("Sent %d bytes.\n", bytes_sent);
         }
-    }  // end while(1)
+    } // end while(1)
 
     printf("Closing socket...\n");
     CLOSESOCKET(socket_peer);
