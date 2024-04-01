@@ -2,19 +2,23 @@
 
 void dump_memory(const void *mem, size_t len)
 {
-    const char *buffer = mem;
+    const unsigned char *buffer = mem;
     size_t i = 0;
-    for(i = 0; i < len; i++)
+    for (i = 0; i < len; i++)
     {
-        if(i > 0 && i % 8 == 0) printf("\n");
-        printf("%02x ", buffer[i] & 0xff);
+
+        for (int j = 0; j < 8; j++)
+            printf("%d", (buffer[i] >> (7 - j)) & 1);
+
+        printf(" ");
     }
-    if(i > 1 && i % 8 != 1) puts("");
+
+    printf("\n");
 }
 
 int main()
 {
-    char arr[8] = {112, 12, -81, -86, -118, 69, -79, 40};
+    double arr[1] = {-13.625};
     dump_memory(arr, sizeof(arr));
     return 0;
 }
