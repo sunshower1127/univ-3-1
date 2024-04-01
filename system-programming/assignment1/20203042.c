@@ -41,8 +41,9 @@ int main()
                 *((char *)temp + i) |= (1 << (7 - j));
             }
 
-    int *value = (int *)temp;
-    printf("3. signed int : %d %d \n", value[0], value[1]);
+
+    
+    printf("3. signed int : %d %d \n", ((int*)temp)[0], ((int*)temp)[1]);
     // Free the allocated memory
     free(temp);
     free(data);
