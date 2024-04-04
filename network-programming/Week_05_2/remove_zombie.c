@@ -6,9 +6,11 @@
 
 void read_childproc(int sig)
 {
+	printf("read_childproc\n");
 	int status;
-	pid_t id=waitpid(-1, &status, WNOHANG);
-	if(WIFEXITED(status))
+	// 그냥 더블체크인듯.
+	pid_t id = waitpid(-1, &status, WNOHANG);
+	if (WIFEXITED(status))
 	{
 		printf("Removed proc id: %d \n", id);
 		printf("Child send: %d \n", WEXITSTATUS(status));
@@ -19,13 +21,13 @@ int main(int argc, char *argv[])
 {
 	pid_t pid;
 	struct sigaction act;
-	act.sa_handler=read_childproc;
+	act.sa_handler = read_childproc;
 	sigemptyset(&act.sa_mask);
-	act.sa_flags=0;
+	act.sa_flags = 0;
 	sigaction(SIGCHLD, &act, 0);
 
-	pid=fork();
-	if(pid==0)
+	pid = fork();
+	if (pid == 0)
 	{
 		puts("Hi! I'm child process");
 		sleep(10);
@@ -34,8 +36,8 @@ int main(int argc, char *argv[])
 	else
 	{
 		printf("Child proc id: %d \n", pid);
-		pid=fork();
-		if(pid==0)
+		pid = fork();
+		if (pid == 0)
 		{
 			puts("Hi! I'm child process");
 			sleep(10);
@@ -45,7 +47,7 @@ int main(int argc, char *argv[])
 		{
 			int i;
 			printf("Child proc id: %d \n", pid);
-			for(i=0; i<5; i++)
+			for (i = 0; i < 5; i++)
 			{
 				puts("wait...");
 				sleep(5);
@@ -59,16 +61,16 @@ int main(int argc, char *argv[])
 root@my_linux:/home/swyoon/tcpip# gcc remove_zombie.c -o zombie
 root@my_linux:/home/swyoon/tcpip# ./zombie
 Hi! I'm child process
-Child proc id: 9529 
+Child proc id: 9529
 Hi! I'm child process
-Child proc id: 9530 
+Child proc id: 9530
 wait...
 wait...
-Removed proc id: 9530 
-Child send: 24 
+Removed proc id: 9530
+Child send: 24
 wait...
-Removed proc id: 9529 
-Child send: 12 
+Removed proc id: 9529
+Child send: 12
 wait...
 wait...
 

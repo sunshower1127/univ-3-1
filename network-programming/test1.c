@@ -1,28 +1,21 @@
-#include <arpa/inet.h>
-#include <netdb.h>
+#include <time.h>
 #include <stdio.h>
-#include <string.h>
-#include <sys/socket.h>
 
 int main()
 {
-    struct sockaddr_in sa;  // input your address
-    char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
+    // // 한국어로 설정
+    // setlocale(LC_ALL, "ko_KR.utf8");
 
-    memset(&sa, 0, sizeof(struct sockaddr_in));
-    sa.sin_family = AF_INET;
-    sa.sin_port = htons(80);                           // for example
-    inet_pton(AF_INET, "23.51.28.244", &sa.sin_addr);  // for example
+    time_t rawtime;
+    struct tm *timeinfo;
+    char buffer[80];
 
-    if(getnameinfo((struct sockaddr *)&sa, sizeof(struct sockaddr_in), hbuf,
-                   sizeof(hbuf), sbuf, sizeof(sbuf), 0))
-    {
-        printf("Could not resolve hostname for this address\n");
-    }
-    else
-    {
-        printf("host=%s, serv=%s\n", hbuf, sbuf);
-    }
+    time(&rawtime);
+    timeinfo = localtime(&rawtime);
+
+    // 시간을 "YYYY년 MM월 DD일 HH시 MM분 SS초" 형식으로 출력
+    strftime(buffer, 80, "%Y년 %m월 %d일 %H시 %M분 %S초", timeinfo);
+    puts(buffer);
 
     return 0;
 }

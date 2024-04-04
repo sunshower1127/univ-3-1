@@ -115,13 +115,14 @@ int main(int argc, char *argv[])
         fd_set reads;                // 소켓들을 넣을 배열
         FD_ZERO(&reads);             // 다 0으로 초기화 -> 처음에 0으로 초기화 시켜주는게 좋음.
         FD_SET(socket_peer, &reads); // 클라이언트 소켓을 넣음.
-#if !defined(_WIN32)                 // 리눅스는 stdin도 fd임.
-        FD_SET(0, &reads);           // stdin 소켓을 넣음. -> 키보드 입력을 받기 위함.
+#if !defined( \
+    _WIN32)                // 리눅스는 stdin도 fd임. 윈도우는 아니라서 kbhit()을 써야함.
+        FD_SET(0, &reads); // stdin 소켓을 넣음. -> 키보드 입력을 받기 위함.
 #endif
 
         struct timeval timeout;
         timeout.tv_sec = 0;
-        timeout.tv_usec = 100000; // 100ms = 0.1s
+        timeout.tv_usec = 10000000; // 100ms = 0.1s
 
         if (select(socket_peer + 1, &reads, 0, 0, &timeout) < 0)
         // select -> 여러 소켓을 한번에 관리할 수 있게 해줌.
