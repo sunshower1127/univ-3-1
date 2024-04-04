@@ -1,7 +1,39 @@
-#include "chap03.h"
-#include <ctype.h>
+#if defined(_WIN32)
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0600
+#endif
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+
+#else
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <unistd.h>
+#include <errno.h>
+
+#endif
+
+#if defined(_WIN32)
+#define ISVALIDSOCKET(s) ((s) != INVALID_SOCKET)
+#define CLOSESOCKET(s) closesocket(s)
+#define GETSOCKETERRNO() (WSAGetLastError())
+
+#else
+#define ISVALIDSOCKET(s) ((s) >= 0)
+#define CLOSESOCKET(s) close(s)
+#define SOCKET int
+#define GETSOCKETERRNO() (errno)
+#endif
 
 #include <stdio.h>
+#include <string.h>
+
+#include <ctype.h>
+
 #include <time.h>
 
 int main()
@@ -83,7 +115,6 @@ int main()
             //
             if (FD_ISSET(i, &reads))
             {
-                printf("FD_ISSET : %d \n", i);
 
                 if (i == socket_listen)
                 {
@@ -105,30 +136,34 @@ int main()
                         max_socket = socket_client;
 
                     char address_buffer[100];
+                    char port_buffer[100];
                     getnameinfo((struct sockaddr *)&client_address,
                                 client_len,
-                                address_buffer, sizeof(address_buffer), 0, 0,
-                                NI_NUMERICHOST);
-                    printf("New connection from %s\n", address_buffer);
+                                address_buffer, sizeof(address_buffer), port_buffer, sizeof(port_buffer),
+                                0);
+                    printf("New connection from %s %s\n", address_buffer, port_buffer);
 
                     // client에게 안내문 보내기
-                    const char *message = "1: 현재시간, 2: 간단한 계산\n";
+                    const char *message = "1: 현재시간, 2: 계산(사칙연산)\n";
                     send(socket_client, message, strlen(message), 0);
                 }
                 else
                 {
                     char read[1024];
                     int bytes_received = recv(i, read, 1024, 0);
-                    if (bytes_received < 1)
+
+                    if (bytes_received < 1 || strcmp(read, "quit") == 0)
                     {
+                        printf("'quit' from client %d\n", i - 3);
                         FD_CLR(i, &master);
-                        printf("CLOSESOCKET : %d \n", i);
+                        printf("\t : response done.\n");
                         CLOSESOCKET(i);
                         continue;
                     }
 
                     if (read[0] == '1')
                     {
+                        printf("'current time' from client %d\n", i - 3);
                         time_t rawtime;
                         struct tm *timeinfo;
                         char buffer[80];
@@ -140,13 +175,20 @@ int main()
                         strftime(buffer, 80, "현재시간 : %Y년 %m월 %d일 %H시 %M분 %S초\n", timeinfo);
 
                         send(i, buffer, strlen(buffer), 0);
+                        printf("\t : response done.\n");
                     }
                     else if (read[0] == '2')
                     {
+                        printf("'calculation' from client %d\n", i - 3);
                         // 연산자에 따라 사칙연산 계산
                         int num1, num2;
                         char op;
-                        sscanf(read + 1, "%d %c %d", &num1, &op, &num2);
+                        int j = sscanf(read + 1, "%d %c %d", &num1, &op, &num2);
+                        if (j < 3)
+                        {
+                            send(i, "Invalid input\n", 14, 0);
+                            continue;
+                        }
 
                         int result;
                         switch (op)
@@ -172,17 +214,13 @@ int main()
                         sprintf(buffer, "%d %c %d = %d\n", num1, op, num2, result);
 
                         send(i, buffer, strlen(buffer), 0);
+
+                        printf("\t : response done.\n");
                     }
-
-                    // int j;
-                    // for (j = 0; j < bytes_received; ++j)
-                    //     read[j] = toupper(read[j]);
-                    // send(i, read, bytes_received, 0);
                 }
-
-            } // if FD_ISSET
-        }     // for i to max_socket
-    }         // while(1)
+            }
+        }
+    }
 
     printf("Closing listening socket...\n");
     CLOSESOCKET(socket_listen);

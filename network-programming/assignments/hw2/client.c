@@ -1,49 +1,39 @@
-/*
- * MIT License
- *
- * Copyright (c) 2018 Lewis Van Winkle
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
- * SOFTWARE.
- */
-
-#include "chap03.h"
-
 #if defined(_WIN32)
-#include <conio.h>
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0600
+#endif
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "ws2_32.lib")
+
+#else
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <unistd.h>
+#include <errno.h>
+
 #endif
 
-int main(int argc, char *argv[])
+#if defined(_WIN32)
+#define ISVALIDSOCKET(s) ((s) != INVALID_SOCKET)
+#define CLOSESOCKET(s) closesocket(s)
+#define GETSOCKETERRNO() (WSAGetLastError())
+
+#else
+#define ISVALIDSOCKET(s) ((s) >= 0)
+#define CLOSESOCKET(s) close(s)
+#define SOCKET int
+#define GETSOCKETERRNO() (errno)
+#endif
+
+#include <stdio.h>
+#include <string.h>
+
+int main()
 {
-#if defined(_WIN32)
-    WSADATA d;
-    if (WSAStartup(MAKEWORD(2, 2), &d))
-    {
-        fprintf(stderr, "Failed to initialize.\n");
-        return 1;
-    }
-#endif
-
-    if (argc < 3)
-    {
-        fprintf(stderr, "usage: tcp_client hostname port\n");
-        return 1;
-    }
 
     printf("Configuring remote address...\n");
     struct addrinfo hints;
@@ -54,7 +44,7 @@ int main(int argc, char *argv[])
     //   setting = hints(addrinfo)
     //   input = domain_name, port
     //   output = ip_address(addrinfo)
-    if (getaddrinfo(argv[1], argv[2], &hints, &peer_address))
+    if (getaddrinfo("localhost", "8080", &hints, &peer_address))
     {
         fprintf(stderr, "getaddrinfo() failed. (%d)\n", GETSOCKETERRNO());
         return 1;
@@ -108,21 +98,17 @@ int main(int argc, char *argv[])
     freeaddrinfo(peer_address);
 
     printf("Connected.\n");
-    printf("To send data, enter text followed by enter.\n");
 
     while (1)
     {
         fd_set reads;                // 소켓들을 넣을 배열
         FD_ZERO(&reads);             // 다 0으로 초기화 -> 처음에 0으로 초기화 시켜주는게 좋음.
         FD_SET(socket_peer, &reads); // 클라이언트 소켓을 넣음.
-#if !defined( \
-    _WIN32)                // 리눅스는 stdin도 fd임. 윈도우는 아니라서 kbhit()을 써야함.
-        FD_SET(0, &reads); // stdin 소켓을 넣음. -> 키보드 입력을 받기 위함.
-#endif
+        FD_SET(0, &reads);           // stdin 소켓을 넣음. -> 키보드 입력을 받기 위함.
 
         struct timeval timeout;
         timeout.tv_sec = 0;
-        timeout.tv_usec = 10000000; // 100ms = 0.1s
+        timeout.tv_usec = 100000; // 100ms = 0.1s
 
         if (select(socket_peer + 1, &reads, 0, 0, &timeout) < 0)
         // select -> 여러 소켓을 한번에 관리할 수 있게 해줌.
@@ -135,10 +121,6 @@ int main(int argc, char *argv[])
         // timeout이 NULL이면 무한정 기다림.
         // socket_peer + 1 한 이유는 뒤에 0(stdin)이 있기 때문.
         // 소켓 읽기만 하면 되니깐 쓰기, 에러는 0으로 넣음.
-        {
-            fprintf(stderr, "select() failed. (%d)\n", GETSOCKETERRNO());
-            return 1;
-        }
         {
             fprintf(stderr, "select() failed. (%d)\n", GETSOCKETERRNO());
             return 1;
@@ -159,8 +141,7 @@ int main(int argc, char *argv[])
                 printf("Connection closed by peer.\n");
                 break;
             }
-            printf("Received (%d bytes): %.*s", bytes_received, bytes_received,
-                   read);
+            printf("%.*s", bytes_received, read);
         }
 
 #if defined(_WIN32)
@@ -173,13 +154,16 @@ int main(int argc, char *argv[])
             char read[4096];
             if (!fgets(read, 4096, stdin))
                 break;
-            printf("Sending: %s", read);
             // send
             //   setting = flags
             //   input = SOCKET, 보낼 버퍼(char*), 버퍼크기(size_t)
             //   output = 보낸 바이트 수(ssize_t)
             int bytes_sent = send(socket_peer, read, strlen(read), 0);
-            printf("Sent %d bytes.\n", bytes_sent);
+            if (bytes_sent < 1)
+            {
+                printf("Connection close.\n");
+                break;
+            }
         }
     } // end while(1)
 

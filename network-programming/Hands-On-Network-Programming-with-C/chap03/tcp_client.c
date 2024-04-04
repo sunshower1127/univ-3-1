@@ -138,10 +138,6 @@ int main(int argc, char *argv[])
             fprintf(stderr, "select() failed. (%d)\n", GETSOCKETERRNO());
             return 1;
         }
-        {
-            fprintf(stderr, "select() failed. (%d)\n", GETSOCKETERRNO());
-            return 1;
-        }
 
         if (FD_ISSET(socket_peer, &reads))
         // FD_ISSET -> reads에 해당 소켓이 1인지 -> 데이터가 들어왔는지
