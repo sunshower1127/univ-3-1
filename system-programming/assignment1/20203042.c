@@ -1,6 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "20203042.h"
 
 int main()
 {
@@ -49,7 +47,6 @@ int main()
         for (int j = 0; j < 8; j++)
             if (data[i * 8 + j] == '1')
                 temp[reserve - i - 1] |= (1 << (7 - j));
-
     printf("1. signed char : ");
     for (int i = 0; i < reserve; i++)
         printf("%d ", ((char *)temp)[i]);
