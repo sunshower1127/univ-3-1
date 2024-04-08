@@ -43,11 +43,10 @@ int main()
     // 1. 문자를 8비트 단위로 자름.
     // 2. 메모리에 거꾸로 넣음.
 
-    for (int i = 0; i < reserve; i++)
-        for (int j = 0; j < 8; j++)
-            if (data[i * 8 + j] == '1')
-                temp[reserve - i - 1] |= (1 << (7 - j));
+    set_memory(temp, data, file_size);
+
     printf("1. signed char : ");
+
     for (int i = 0; i < reserve; i++)
         printf("%d ", ((char *)temp)[i]);
     printf("\n");
@@ -69,12 +68,9 @@ int main()
 
     // 32비트 -> 4바이트 단위로 읽기
 
-    memset(temp, 0, reserve);
     for (int i = 0; i < reserve / 4; i++)
-        for (int j = 0; j < 4; j++)
-            for (int k = 0; j < 8; j++)
-                if (data[(i * 4 + j) * 8 + k] == '1')
-                    temp[(4 - j - 1) + 4 * i] |= (1 << (7 - j));
+        reverse_str(data + 4 * i, 4);
+    set_memory(temp, data, file_size);
 
     printf("4. signed int : ");
     for (int i = 0; i < reserve / 4; i++)
@@ -90,6 +86,12 @@ int main()
     for (int i = 0; i < reserve / 4; i++)
         printf("%.4f ", ((float *)temp)[i]);
     printf("\n");
+
+    // 64비트
+
+    for (int i = 0; i < reserve / 8; i++)
+        reverse_str(data + 8 * i, 8);
+    set_memory(temp, data, file_size);
 
     printf("7. signed double : ");
     printf("%.4lf ", ((double *)temp)[0]);

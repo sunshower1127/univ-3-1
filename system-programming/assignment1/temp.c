@@ -2,39 +2,24 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define SIZE 64
+#define SIZE 4
+
+void set_memory(void *mem, char *data, size_t len)
+{
+    char *buffer = mem;
+    for (size_t i = 0; i < len; i++)
+        buffer[i / 8] |= (data[i] == '1') << (7 - i % 8);
+}
 
 int main()
 {
-    char binary[SIZE + 1];
-    unsigned long long int value = 0;
-
-    printf("Enter a 64-bit binary string: ");
-    scanf("%s", binary);
-
-    if(strlen(binary) != SIZE)
-    {
-        printf(
-            "Invalid binary string length. Please enter a 64-bit binary "
-            "string.\n");
-        return 1;
-    }
-
-    for(int i = 0; i < SIZE; i++)
-    {
-        if(binary[i] == '1')
-        {
-            value |= (1ULL << (SIZE - 1 - i));
-        }
-        else if(binary[i] != '0')
-        {
-            printf(
-                "Invalid binary string. Please enter a valid binary string.\n");
-            return 1;
-        }
-    }
-
-    printf("Value stored in memory: %llu\n", value);
-
+    char *data = "00000000000000010000001000000100";
+    char *buffer = (char *)malloc(SIZE);
+    memset(buffer, 0, SIZE);
+    set_memory(buffer, data, strlen(data));
+    for (int i = 0; i < SIZE; i++)
+        printf("%d", buffer[i]);
+    printf("\n");
+    free(buffer);
     return 0;
 }

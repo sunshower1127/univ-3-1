@@ -18,7 +18,7 @@ void dump_memory(const void *mem, size_t len)
 
 int main()
 {
-    double arr[1] = {-13.625};
+    char arr[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'};
     dump_memory(arr, sizeof(arr));
     return 0;
 }
