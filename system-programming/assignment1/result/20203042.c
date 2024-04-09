@@ -71,7 +71,7 @@ int main()
     memcpy(copied_str_data, str_data, bits_len);
 
     for (int i = 0; i < bytes_len / 4; i++)
-        reverse_str(copied_str_data + 4 * i, 4);
+        reverse_str_in_bytes(copied_str_data + 4 * i, 4);
 
     set_memory(memory, copied_str_data, bits_len);
 
@@ -96,7 +96,7 @@ int main()
     memcpy(copied_str_data, str_data, bits_len);
 
     for (int i = 0; i < bytes_len / 8; i++)
-        reverse_str(copied_str_data + 8 * i, 8);
+        reverse_str_in_bytes(copied_str_data + 8 * i, 8);
 
     set_memory(memory, copied_str_data, bits_len);
 

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-void reverse_str(char *input, int bytes)
+void reverse_str_in_bytes(char *input, int bytes)
 {
     char *output = (char *)malloc(bytes * 8);
 

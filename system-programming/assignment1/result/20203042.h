@@ -2,14 +2,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-void reverse_str(char *input, int bytes);
+void reverse_str_in_bytes(char *input, int bytes);
 void dump_memory(const void *mem, size_t len);
 void set_memory(void *mem, char *data, size_t len);
 
 // 바이너리 문자열을 해당 바이트 개수만큼 바이트 단위로 거꾸로 변환시킨다.
-// 예) reverse_str("0000111111110000", 2) -> 1111000000001111
+// 예) reverse_str_in_bytes("0000111111110000", 2) -> 1111000000001111
 // 리틀엔디안 구조로 메모리에 저장되는 데이터를 고려하기 위해 만들었다.
-void reverse_str(char *input, int bytes)
+void reverse_str_in_bytes(char *input, int bytes)
 {
     char *output = (char *)malloc(bytes * 8);
 
