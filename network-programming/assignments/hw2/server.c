@@ -38,7 +38,6 @@
 
 int main()
 {
-    printf("Configuring local address...\n");
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
@@ -48,7 +47,6 @@ int main()
     struct addrinfo *bind_address;
     getaddrinfo(0, "8080", &hints, &bind_address);
 
-    printf("Creating socket...\n");
     // socket 만드는 법
     // 1. 서버 : socket(자기자신) -> accept()로 연결요청한 반대쪽 소켓 얻어오기
     // 2. 클라이언트 : socket(상대방) -> connect()로 연결요청
@@ -152,7 +150,7 @@ int main()
                     char read[1024];
                     int bytes_received = recv(i, read, 1024, 0);
 
-                    if (bytes_received < 1 || strcmp(read, "quit") == 0)
+                    if (bytes_received < 1 || strncmp(read, "quit", 4) == 0)
                     {
                         printf("'quit' from client %d\n", i - 3);
                         FD_CLR(i, &master);
