@@ -13,13 +13,12 @@ int main()
 
     // input 파일 데이터를 str_data에 넣음.
     // str_data는 "10011101" 같은 문자열이 들어있음.
-    char *str_data = (char *)malloc(bits_len + 1);
-    str_data[bits_len] = '\0';
+    char *str_data = (char *)malloc(bits_len);
     fread(str_data, 1, bits_len, file);
     fclose(file);
+    file = NULL;
 
     printf("BUFSIZ : %d\n\n", bits_len);
-    printf("input : %s\n\n", str_data);
 
     int bytes_len = bits_len / 8;
 
@@ -28,7 +27,6 @@ int main()
 
     // 메모리(memory)에 바이너리 데이터를 리틀 엔디안을 고려해 넣을것임
     void *memory = malloc(bytes_len);
-    memset(memory, 0, bytes_len);
     set_memory(memory, copied_str_data, bits_len);
 
     // 1바이트 자료형은 엔디안의 영향을 받지 않음.
@@ -104,12 +102,16 @@ int main()
 
     printf("7. double : ");
     for (int i = 0; i < bytes_len / 8; i++)
-        printf("%.4lf ", ((double *)memory)[i]);
+        printf("%lf ", ((double *)memory)[i]);
     printf("\n");
 
     free(memory);
     free(str_data);
     free(copied_str_data);
+
+    memory = NULL;
+    str_data = NULL;
+    copied_str_data = NULL;
 
     return 0;
 }

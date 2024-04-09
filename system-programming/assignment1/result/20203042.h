@@ -39,6 +39,7 @@ void dump_memory(const void *mem, size_t len)
 // 메모리에 바이너리 문자열 데이터를 1비트씩 넣는 함수
 void set_memory(void *mem, char *data, size_t len)
 {
+    memset(mem, 0, len / 8);
     char *buffer = mem;
     for (size_t i = 0; i < len; i++)
     {
