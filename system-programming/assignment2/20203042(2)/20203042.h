@@ -222,6 +222,7 @@ void print_section_headers(int32_t fd, Elf64_Ehdr eh, Elf64_Shdr sh_table[])
 			printf("    file offset = 0x%08lx\n", sh_table[i].sh_offset);
 			printf("           size = 0x%08lx\n", sh_table[i].sh_size);
 
+			// 과제 함수 호출
 			change_rodata(fd, sh_table[i]);
 		}
 	}
@@ -232,21 +233,17 @@ void print_section_headers(int32_t fd, Elf64_Ehdr eh, Elf64_Shdr sh_table[])
 /// @param sh section header
 void change_rodata(int32_t fd, Elf64_Shdr sh)
 {
-	char *buff = read_section(fd, sh);
-	char *p = buff;
-	char *end = buff + sh.sh_size;
-	while (p < end)
-	{
-		if (!strncmp(p, "software", 8))
-		{
-			printf("%s\n", p);
-			strncpy(p, "hackers!", 8);
-			printf("%s\n", p);
-			break;
-		}
-		p++;
-	}
+	// readonly data section을 읽어온다.
+	char *ro_data = read_section(fd, sh);
 
+	// software -> hackers!로 변환
+	for (char *p = ro_data; p < ro_data + sh.sh_size; p++)
+		if (!strncmp(p, "software", 8))
+			strncpy(p, "hackers!", 8);
+
+	// lseek으로 offset으로 이동
 	assert(lseek(fd, (off_t)sh.sh_offset, SEEK_SET) == (off_t)sh.sh_offset);
-	assert(write(fd, (void *)buff, sh.sh_size) == sh.sh_size);
+
+	// write로 변경된 데이터 쓰기
+	assert(write(fd, ro_data, sh.sh_size) == sh.sh_size);
 }
