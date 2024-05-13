@@ -3,10 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+// 파일 구조체들을 저장할 배열의 최대 크기
 #define __MAX_FILES (10000)
 
 #define BUFSIZE (1024)
 #define EOF (-1)
+
 // stdin, stdout, stderr 구현
 #define stdin __getstd(0)
 #define stdout __getstd(1)
@@ -28,6 +30,7 @@ FILE __stdin = {.fd = 0, .mode = 'r'};
 FILE __stdout = {.fd = 1, .mode = 'w'};
 FILE __stderr = {.fd = 2, .mode = 'w'};
 
+// 열린 파일들을 저장할 배열 -> 프로그램 exit시 fclose를 호출하기 위함
 FILE *__open_files[__MAX_FILES];
 int __open_files_count = 0;
 int __atexit_count = 0;
@@ -47,6 +50,7 @@ FILE *__getstd(int fd)
 {
     if (__atexit_count == 0)
     {
+        // 프로그램 종료시 __atexit 함수 호출
         atexit(__atexit);
         __atexit_count++;
     }
@@ -54,6 +58,7 @@ FILE *__getstd(int fd)
     switch (fd)
     {
     case 0:
+        // 처음 호출시 buffer 동적 할당 & FILE* 배열에 저장
         if (__stdin.buffer == NULL)
         {
             __stdin.buffer = (char *)malloc(BUFSIZE);
