@@ -16,8 +16,6 @@ void test_fflush()
     // Flush the buffer
     assert(fflush(file) == 0);
 
-    // Close and reopen the file in read mode
-    assert(fclose(file) == 0);
     file = fopen(filename, "r");
     assert(file != NULL);
 
@@ -26,8 +24,6 @@ void test_fflush()
 
     // Check that the read data matches the written data
     assert(strncmp(read_data, write_data, strlen(write_data)) == 0);
-
-    assert(fclose(file) == 0);
 
     printf("fflush test passed\n");
 }

@@ -3,13 +3,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define __MAX_FILES (10000)
+
 #define BUFSIZE (1024)
 #define EOF (-1)
-
 // stdin, stdout, stderr 구현
-#define stdin (__getstd(0))
-#define stdout (__getstd(1))
-#define stderr (__getstd(2))
+#define stdin __getstd(0)
+#define stdout __getstd(1)
+#define stderr __getstd(2)
 
 typedef struct myFile
 {
@@ -27,7 +28,12 @@ FILE __stdin = {.fd = 0, .mode = 'r'};
 FILE __stdout = {.fd = 1, .mode = 'w'};
 FILE __stderr = {.fd = 2, .mode = 'w'};
 
+FILE *__open_files[__MAX_FILES];
+int __open_files_count = 0;
+int __atexit_count = 0;
+
 FILE *__getstd(int fd);
+void __atexit();
 FILE *fopen(const char *pathname, const char *mode);
 int fread(void *ptr, int size, int nmemb, FILE *stream);
 int fwrite(const void *ptr, int size, int nmemb, FILE *stream);
@@ -39,22 +45,50 @@ int fclose(FILE *stream);
 // stdin, stdout, stderr 구현
 FILE *__getstd(int fd)
 {
+    if (__atexit_count == 0)
+    {
+        atexit(__atexit);
+        __atexit_count++;
+    }
+
     switch (fd)
     {
     case 0:
         if (__stdin.buffer == NULL)
+        {
             __stdin.buffer = (char *)malloc(BUFSIZE);
+            if (__open_files_count < __MAX_FILES)
+                __open_files[__open_files_count++] = &__stdin;
+        }
         return &__stdin;
     case 1:
         if (__stdout.buffer == NULL)
+        {
             __stdout.buffer = (char *)malloc(BUFSIZE);
+            if (__open_files_count < __MAX_FILES)
+                __open_files[__open_files_count++] = &__stdout;
+        }
         return &__stdout;
     case 2:
         if (__stderr.buffer == NULL)
+        {
             __stderr.buffer = (char *)malloc(BUFSIZE);
+            if (__open_files_count < __MAX_FILES)
+                __open_files[__open_files_count++] = &__stderr;
+        }
         return &__stderr;
     default:
         return NULL;
+    }
+}
+
+// 모든 FILE fclose
+void __atexit()
+{
+    for (int i = 0; i < __MAX_FILES; i++)
+    {
+        if (__open_files[i] != NULL)
+            fclose(__open_files[i]);
     }
 }
 
@@ -97,6 +131,17 @@ FILE *fopen(const char *pathname, const char *mode)
     fp->buffer = (char *)malloc(BUFSIZE);
     fp->buffer_pos = 0;
     fp->buffer_size = 0;
+
+    // 프로그램 exit될때 fclose를 호출하기 위해서 FILE*를 저장
+    if (__open_files_count < __MAX_FILES)
+        __open_files[__open_files_count++] = fp;
+
+    // atexit에 등록
+    if (__atexit_count == 0)
+    {
+        atexit(__atexit);
+        __atexit_count++;
+    }
 
     return fp;
 }
@@ -256,6 +301,15 @@ int fclose(FILE *stream)
     if (stream == &__stdin || stream == &__stdout || stream == &__stderr)
         return 0;
 
+    // 사용자가 프로그램이 exit하기 전에 fclose를 호출할 경우 대비
+    for (int i = 0; i < __MAX_FILES; i++)
+    {
+        if (__open_files[i] == stream)
+        {
+            __open_files[i] = NULL;
+            break;
+        }
+    }
     free(stream);
 
     return 0;

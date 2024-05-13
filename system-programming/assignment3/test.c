@@ -31,9 +31,5 @@ int main()
     written = fwrite(errmsg, sizeof(char), strlen(errmsg), err);
     assert(written == strlen(errmsg));
 
-    assert(fclose(in) == 0);
-    assert(fclose(out) == 0);
-    assert(fclose(err) == 0);
-
     return 0;
 }
