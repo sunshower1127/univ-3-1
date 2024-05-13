@@ -5,12 +5,11 @@
 
 #define BUFSIZE (1024)
 #define EOF (-1)
-#define stdin (0)
-#define stdout (1)
-#define stderr (2)
 
-#define FALSE (0)
-#define TRUE (1)
+// stdin, stdout, stderr 구현
+#define stdin (__getstd(0))
+#define stdout (__getstd(1))
+#define stderr (__getstd(2))
 
 typedef struct myFile
 {
@@ -24,6 +23,11 @@ typedef struct myFile
     int buffer_size;
 } FILE;
 
+FILE __stdin = {.fd = 0, .mode = 'r'};
+FILE __stdout = {.fd = 1, .mode = 'w'};
+FILE __stderr = {.fd = 2, .mode = 'w'};
+
+FILE *__getstd(int fd);
 FILE *fopen(const char *pathname, const char *mode);
 int fread(void *ptr, int size, int nmemb, FILE *stream);
 int fwrite(const void *ptr, int size, int nmemb, FILE *stream);
@@ -32,12 +36,34 @@ int fseek(FILE *stream, long offset, int whence);
 int feof(FILE *stream);
 int fclose(FILE *stream);
 
+// stdin, stdout, stderr 구현
+FILE *__getstd(int fd)
+{
+    switch (fd)
+    {
+    case 0:
+        if (__stdin.buffer == NULL)
+            __stdin.buffer = (char *)malloc(BUFSIZE);
+        return &__stdin;
+    case 1:
+        if (__stdout.buffer == NULL)
+            __stdout.buffer = (char *)malloc(BUFSIZE);
+        return &__stdout;
+    case 2:
+        if (__stderr.buffer == NULL)
+            __stderr.buffer = (char *)malloc(BUFSIZE);
+        return &__stderr;
+    default:
+        return NULL;
+    }
+}
+
 // 정상 return -> File*, 에러 return -> NULL
 FILE *fopen(const char *pathname, const char *mode)
 {
     FILE *fp = (FILE *)malloc(sizeof(FILE));
 
-    fp->plus_mode = (strlen(mode) == 2 && mode[1] == '+') ? TRUE : FALSE;
+    fp->plus_mode = (strlen(mode) == 2 && mode[1] == '+') ? 1 : 0;
 
     // fopen의 mode와 open의 flags를 맵핑
     int flags;
@@ -79,7 +105,7 @@ FILE *fopen(const char *pathname, const char *mode)
 int fread(void *ptr, int size, int nmemb, FILE *stream)
 {
     // "w", "a" 모드에선 읽기 불가
-    if (stream->mode != 'r' && stream->plus_mode == FALSE)
+    if (stream->mode != 'r' && !stream->plus_mode)
         return 0;
 
     // 쓰기 버퍼 비우기
@@ -124,11 +150,11 @@ int fread(void *ptr, int size, int nmemb, FILE *stream)
 int fwrite(const void *ptr, int size, int nmemb, FILE *stream)
 {
     // "r" 모드에선 쓰기 불가
-    if (stream->mode == 'r' && stream->plus_mode == FALSE)
+    if (stream->mode == 'r' && !stream->plus_mode)
         return 0;
 
     // "a+" 모드에서 이전에 read를 했었다면 write를 할땐 파일 끝으로 이동시킴.
-    if (stream->mode == 'a' && stream->plus_mode == TRUE && stream->lastop == 'r')
+    if (stream->mode == 'a' && stream->plus_mode && stream->lastop == 'r')
         fseek(stream, 0, SEEK_END);
 
     // 읽기 버퍼 비우기
@@ -185,7 +211,7 @@ int fflush(FILE *stream)
 // 정상 return -> 0, 에러 return -> -1
 int fseek(FILE *stream, long offset, int whence)
 {
-    if (stream->mode == 'a' && stream->plus_mode == FALSE)
+    if (stream->mode == 'a' && !stream->plus_mode)
         return 0;
 
     // 쓰기 버퍼 남아있으면 싹 없애주고
@@ -225,6 +251,11 @@ int fclose(FILE *stream)
     if (close(stream->fd) == -1)
         return EOF;
     free(stream->buffer);
+
+    // stdin, stdout, stderr는 free하지 않음 -> 전역변수라서
+    if (stream == &__stdin || stream == &__stdout || stream == &__stderr)
+        return 0;
+
     free(stream);
 
     return 0;
