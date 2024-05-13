@@ -15,10 +15,10 @@
 typedef struct myFile
 {
     int fd;
-    int mode;
-    int plus_mode;
-    char lastop; // 'r' or 'w'
-    int eof;
+    int mode;      // 'r', 'w', 'a'
+    int plus_mode; // 'r+', 'w+', 'a+'
+    char lastop;   // 'r' or 'w'
+    int eof;       // 0: not EOF, -1: EOF
     char *buffer;
     int buffer_pos;
     int buffer_size;
@@ -32,13 +32,15 @@ int fseek(FILE *stream, long offset, int whence);
 int feof(FILE *stream);
 int fclose(FILE *stream);
 
+// 정상 return -> File*, 에러 return -> NULL
 FILE *fopen(const char *pathname, const char *mode)
 {
     FILE *fp = (FILE *)malloc(sizeof(FILE));
 
     fp->plus_mode = (strlen(mode) == 2 && mode[1] == '+') ? TRUE : FALSE;
-    int flags;
 
+    // fopen의 mode와 open의 flags를 맵핑
+    int flags;
     switch (mode[0])
     {
     case 'r':
@@ -55,6 +57,7 @@ FILE *fopen(const char *pathname, const char *mode)
         return NULL;
     }
 
+    // 파일 열기
     fp->fd = open(pathname, flags, 0666);
     if (fp->fd < 0)
     {
@@ -64,7 +67,7 @@ FILE *fopen(const char *pathname, const char *mode)
 
     fp->mode = mode[0];
     fp->lastop = 0;
-    fp->eof = FALSE;
+    fp->eof = 0;
     fp->buffer = (char *)malloc(BUFSIZE);
     fp->buffer_pos = 0;
     fp->buffer_size = 0;
@@ -72,11 +75,14 @@ FILE *fopen(const char *pathname, const char *mode)
     return fp;
 }
 
+// 정상 return -> 읽은 요소의 개수, 에러 return -> 0
 int fread(void *ptr, int size, int nmemb, FILE *stream)
 {
+    // "w", "a" 모드에선 읽기 불가
     if (stream->mode != 'r' && stream->plus_mode == FALSE)
         return 0;
 
+    // 쓰기 버퍼 비우기
     if (stream->lastop == 'w')
         fflush(stream);
 
@@ -86,6 +92,7 @@ int fread(void *ptr, int size, int nmemb, FILE *stream)
     int read_size = 0;
     int read_total = 0;
 
+    // 버퍼에서 읽어오고, 버퍼에 없다면 파일에서 버퍼로 가져와서 읽어옴.
     while (read_total < total)
     {
         if (stream->buffer_pos == 0)
@@ -93,7 +100,7 @@ int fread(void *ptr, int size, int nmemb, FILE *stream)
             stream->buffer_size = read(stream->fd, stream->buffer, BUFSIZE);
             if (stream->buffer_size == 0)
             {
-                stream->eof = TRUE;
+                stream->eof = EOF;
                 break;
             }
         }
@@ -113,6 +120,7 @@ int fread(void *ptr, int size, int nmemb, FILE *stream)
     return read_total / size;
 }
 
+// 정상 return -> 쓴 요소의 개수, 에러 return -> 0
 int fwrite(const void *ptr, int size, int nmemb, FILE *stream)
 {
     // "r" 모드에선 쓰기 불가
@@ -136,6 +144,7 @@ int fwrite(const void *ptr, int size, int nmemb, FILE *stream)
     int write_size = 0;
     int write_total = 0;
 
+    // 버퍼에 쓰고, 버퍼가 가득차면 파일로 쓰기
     while (write_total < total)
     {
         write_size = total - write_total;
@@ -156,6 +165,7 @@ int fwrite(const void *ptr, int size, int nmemb, FILE *stream)
     return write_total / size;
 }
 
+// 정상 return -> 0, 에러 return -> EOF
 int fflush(FILE *stream)
 {
     // read buffer에선 안씀
@@ -172,6 +182,7 @@ int fflush(FILE *stream)
     return 0;
 }
 
+// 정상 return -> 0, 에러 return -> -1
 int fseek(FILE *stream, long offset, int whence)
 {
     if (stream->mode == 'a' && stream->plus_mode == FALSE)
@@ -194,17 +205,25 @@ int fseek(FILE *stream, long offset, int whence)
     return 0;
 }
 
+// EOF이면 -1, 아니면 0 리턴
 int feof(FILE *stream)
 {
-    return stream->eof;
+    if (stream->eof == EOF)
+        return -1;
+    else
+        return 0;
 }
 
+// 정상 return -> 0, 에러 return -> EOF
 int fclose(FILE *stream)
 {
+    if (stream == NULL)
+        return EOF;
     if (stream->lastop == 'w')
         fflush(stream);
 
-    close(stream->fd);
+    if (close(stream->fd) == -1)
+        return EOF;
     free(stream->buffer);
     free(stream);
 

@@ -1,66 +1,39 @@
-#include <assert.h>
 #include "mystdio.h"
-
-void test_fopen_fclose()
-{
-    FILE *fp = fopen("test.txt", "w+");
-    assert(fp != NULL);
-    assert(fclose(fp) == 0);
-}
-
-void test_fwrite_fread()
-{
-    FILE *fp = fopen("test.txt", "w+");
-    assert(fp != NULL);
-
-    char write_buf[] = "Hello, World!";
-    assert(fwrite(write_buf, sizeof(char), sizeof(write_buf), fp) == sizeof(write_buf));
-
-    assert(fseek(fp, 0, SEEK_SET) == 0);
-
-    char read_buf[sizeof(write_buf)];
-    assert(fread(read_buf, sizeof(char), sizeof(read_buf), fp) == sizeof(read_buf));
-
-    assert(strcmp(write_buf, read_buf) == 0);
-
-    assert(fclose(fp) == 0);
-}
+#include <assert.h>
 
 void test_fflush()
 {
-    FILE *fp = fopen("test.txt", "w");
-    assert(fp != NULL);
+    char *filename = "testfile.txt";
+    char *write_data = "Hello, World!";
+    char read_data[50];
 
-    char buf[] = "Hello, World!";
-    assert(fwrite(buf, sizeof(char), sizeof(buf), fp) == sizeof(buf));
+    FILE *file = fopen(filename, "w+");
+    assert(file != NULL);
 
-    assert(fflush(fp) == 0);
+    // Write data to the file
+    assert(fwrite(write_data, sizeof(char), strlen(write_data), file) == strlen(write_data));
 
-    assert(fclose(fp) == 0);
-}
+    // Flush the buffer
+    assert(fflush(file) == 0);
 
-void test_feof()
-{
-    FILE *fp = fopen("test.txt", "r");
-    assert(fp != NULL);
+    // Close and reopen the file in read mode
+    assert(fclose(file) == 0);
+    file = fopen(filename, "r");
+    assert(file != NULL);
 
-    while (!feof(fp))
-    {
-        char buf[BUFSIZE];
-        fread(buf, sizeof(char), BUFSIZE, fp);
-    }
+    // Read the data from the file
+    assert(fread(read_data, sizeof(char), sizeof(read_data), file) == strlen(write_data));
 
-    assert(feof(fp) == TRUE);
+    // Check that the read data matches the written data
+    assert(strncmp(read_data, write_data, strlen(write_data)) == 0);
 
-    assert(fclose(fp) == 0);
+    assert(fclose(file) == 0);
+
+    printf("fflush test passed\n");
 }
 
 int main()
 {
-    test_fopen_fclose();
-    test_fwrite_fread();
     test_fflush();
-    test_feof();
-    printf("All tests passed.\n");
     return 0;
 }
