@@ -1,0 +1,247 @@
+PTHREAD_CREATE(3)			 Linux 프로그래머 매뉴얼			 PTHREAD_CREATE(3)
+
+이름
+	pthread_create - 새로운 스레드 생성
+
+요약
+	#include <pthread.h>
+
+	int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
+			  void *(*start_routine) (void *), void *arg);
+
+	-pthread로 컴파일 및 링크합니다.
+
+설명
+	pthread_create() 함수는 호출하는 프로세스에서 새로운 스레드를 시작합니다. 새로운 스레드는 start_routine()을 호출하여 실행을 시작하며, arg는 start_routine()의 유일한 인수로 전달됩니다.
+
+	새로운 스레드는 다음 중 하나의 방법으로 종료됩니다:
+
+	* pthread_exit(3)를 호출하여 종료 상태 값을 지정하고, 이 값을 pthread_join(3)을 호출하는 동일한 프로세스 내의 다른 스레드에서 사용할 수 있습니다.
+
+	* start_routine()에서 반환합니다. 이는 반환 문에서 지정된 값으로 pthread_exit(3)를 호출하는 것과 동일합니다.
+
+	* 취소됩니다 (pthread_cancel(3) 참조).
+
+	* 프로세스의 스레드 중 하나가 exit(3)를 호출하거나, 메인 스레드가 main()에서 반환합니다. 이로 인해 프로세스의 모든 스레드가 종료됩니다.
+
+	attr 인수는 새로운 스레드의 속성을 결정하기 위해 사용되는 pthread_attr_t 구조체를 가리킵니다. 이 구조체는 pthread_attr_init(3) 및 관련 함수를 사용하여 초기화됩니다. attr이 NULL인 경우 스레드는 기본 속성으로 생성됩니다.
+
+	성공적인 pthread_create() 호출은 새로운 스레드의 ID를 thread가 가리키는 버퍼에 저장한 후, 이 식별자는 다른 pthreads 함수를 호출할 때 스레드를 참조하는 데 사용됩니다.
+
+	새로운 스레드는 생성 스레드의 시그널 마스크 (pthread_sigmask(3))의 복사본을 상속합니다. 새 스레드의 대기 중인 시그널 집합은 비어 있습니다 (sigpending(2)). 새로운 스레드는 생성 스레드의 대체 시그널 스택 (sigaltstack(2))을 상속하지 않습니다.
+
+	새로운 스레드는 호출 스레드의 부동 소수점 환경 (fenv(3))을 상속합니다.
+
+	새로운 스레드의 CPU 시간 클록의 초기 값은 0입니다 (pthread_getcpuclockid(3) 참조).
+
+   Linux 특정 세부 정보
+	새로운 스레드는 호출 스레드의 기능 집합 (capabilities(7)) 및 CPU 어피니티 마스크 (sched_setaffinity(2))의 복사본을 상속합니다.
+
+반환 값
+	성공하면 pthread_create()는 0을 반환하고, 오류가 발생하면 오류 번호를 반환하며 *thread의 내용은 정의되지 않습니다.
+
+오류
+	EAGAIN 추가 스레드를 생성하기에 충분한 리소스가 없습니다.
+
+	EAGAIN 스레드 수에 대한 시스템 제한이 발견되었습니다. 이 오류를 발생시킬 수 있는 여러 가지 제한 사항이 있습니다: RLIMIT_NPROC 소프트 리소스 제한 (setrlimit(2)를 통해 설정)은 실제 사용자 ID의 프로세스 및 스레드 수를 제한했습니다. 커널의 시스템 전체 제한인 /proc/sys/kernel/threads-max은 프로세스 및 스레드 수에 대한 최대 수를 제한했습니다 (proc(5) 참조). 또는 최대 PID 수인 /proc/sys/kernel/pid_max에 도달했습니다 (proc(5) 참조).
+
+	EINVAL attr에 잘못된 설정이 있습니다.
+
+	EPERM 스케줄링 정책 및 attr에 지정된 매개변수를 설정할 권한이 없습니다.
+
+속성
+	이 섹션에서 사용된 용어에 대한 설명은 attributes(7)을 참조하십시오.
+
+	┌─────────────────┬───────────────┬─────────┐
+	│인터페이스	 │ 속성	 │ 값   │
+	├─────────────────┼───────────────┼─────────┤
+	│pthread_create() │ 스레드 안전성 │ MT-Safe │
+	└─────────────────┴───────────────┴─────────┘
+
+일치
+	POSIX.1-2001, POSIX.1-2008.
+
+참고 사항
+	pthread_create()에 의해 *thread에 반환된 스레드 ID에 대한 자세한 정보는 pthread_self(3)을 참조하십시오. 실시간 스케줄링 정책이 사용되지 않는 한, pthread_create() 호출 후에는 호출 스레드 또는 새로운 스레드 중 어느 것이 다음으로 실행될지 결정할 수 없습니다.
+
+	스레드는 결합 가능한(joinable) 또는 분리 가능한(detached) 상태일 수 있습니다. 스레드가 결합 가능한 경우 다른 스레드는 pthread_join(3)을 호출하여 스레드가 종료될 때까지 기다릴 수 있으며 종료 상태를 가져올 수 있습니다. 종료된 결합 가능한 스레드의 리소스는 마지막으로 해제됩니다. 분리된 스레드가 종료되면 해당 리소스는 자동으로 시스템에 반환됩니다. 종료 상태를 얻기 위해 스레드와 결합할 수 없습니다. 스레드를 분리하는 것은 응용 프로그램이 신경 쓰지 않는 일부 종류의 데몬 스레드에 유용합니다. 기본적으로 새로운 스레드는 결합 가능한 상태로 생성되며, attr이 스레드를 분리 상태로 생성하도록 설정하지 않은 경우입니다 (pthread_attr_setdetachstate(3) 사용).
+
+	NPTL 스레딩 구현에서 프로그램이 시작될 때 RLIMIT_STACK 소프트 리소스 제한이 "무제한" 이외의 값으로 설정된 경우, 이 값은 새로운 스레드의 기본 스택 크기를 결정합니다. pthread_attr_setstacksize(3)를 사용하여 스택 크기 속성을 명시적으로 설정하여 기본값과 다른 스택 크기를 얻을 수 있습니다. RLIMIT_STACK 리소스 제한이 "무제한"으로 설정된 경우, 아키텍처별 스택 크기가 사용됩니다. 다음은 몇 가지 아키텍처에 대한 값입니다:
+
+		  ┌─────────────┬────────────────────┐
+		  │아키텍처	   │ 기본 스택 크기 │
+		  ├─────────────┼────────────────────┤
+		  │i386	    │		    2 MB │
+		  ├─────────────┼────────────────────┤
+		  │IA-64	    │		   32 MB │
+		  ├─────────────┼────────────────────┤
+		  │PowerPC	    │		    4 MB │
+		  ├─────────────┼────────────────────┤
+		  │S/390	    │		    2 MB │
+		  ├─────────────┼────────────────────┤
+		  │Sparc-32	    │		    2 MB │
+		  ├─────────────┼────────────────────┤
+		  │Sparc-64	    │		    4 MB │
+		  ├─────────────┼────────────────────┤
+		  │x86_64	    │		    2 MB │
+		  └─────────────┴────────────────────┘
+
+버그
+	오래된 LinuxThreads 구현에서 프로세스의 각 스레드는 다른 프로세스 ID를 가집니다. 이는 POSIX 스레드 사양을 위반하며, 표준에 대한 많은 비준수 사항의 원인입니다 (pthreads(7) 참조).
+
+예제
+	아래 프로그램은 pthread_create()의 사용법과 pthreads API의 다른 함수들을 보여줍니다.
+
+	다음 실행에서 NPTL 스레딩 구현을 제공하는 시스템에서 스택 크기는 "스택 크기" 리소스 제한에 지정된 값으로 기본값으로 설정됩니다:
+
+	   $ ulimit -s
+	   8192		   # 스택 크기 제한은 8 MB (0x800000 바이트)입니다.
+	   $ ./a.out hola salut servus
+	   Thread 1: 스택 상단 주변 0xb7dd03b8; argv_string=hola
+	   Thread 2: 스택 상단 주변 0xb75cf3b8; argv_string=salut
+	   Thread 3: 스택 상단 주변 0xb6dce3b8; argv_string=servus
+	   스레드 1과 결합되었습니다; 반환된 값은 HOLA입니다.
+	   스레드 2와 결합되었습니다; 반환된 값은 SALUT입니다.
+	   스레드 3과 결합되었습니다; 반환된 값은 SERVUS입니다.
+
+	다음 실행에서 프로그램은 생성된 스레드에 대해 1 MB의 스택 크기를 명시적으로 설정합니다 (pthread_attr_setstacksize(3) 사용):
+
+	   $ ./a.out -s 0x100000 hola salut servus
+	   Thread 1: 스택 상단 주변 0xb7d723b8; argv_string=hola
+	   Thread 2: 스택 상단 주변 0xb7c713b8; argv_string=salut
+	   Thread 3: 스택 상단 주변 0xb7b703b8; argv_string=servus
+	   스레드 1과 결합되었습니다; 반환된 값은 HOLA입니다.
+	   스레드 2와 결합되었습니다; 반환된 값은 SALUT입니다.
+	   스레드 3과 결합되었습니다; 반환된 값은 SERVUS입니다.
+
+프로그램 소스
+
+	#include <pthread.h>
+	#include <string.h>
+	#include <stdio.h>
+	#include <stdlib.h>
+	#include <unistd.h>
+	#include <errno.h>
+	#include <ctype.h>
+
+	#define handle_error_en(en, msg) \
+		do { errno = en; perror(msg); exit(EXIT_FAILURE); } while (0)
+
+	#define handle_error(msg) \
+		do { perror(msg); exit(EXIT_FAILURE); } while (0)
+
+	struct thread_info {    /* thread_start()에 대한 인수로 사용됨 */
+	   pthread_t thread_id;	       /* pthread_create()에 의해 반환된 ID */
+	   int	     thread_num;       /* 응용 프로그램 정의 스레드 번호 */
+	   char	    *argv_string;      /* 명령 줄 인수에서 가져온 문자열 */
+	};
+
+	/* 스레드 시작 함수: 스택 상단 주변 주소를 표시하고, argv_string의 대문자 복사본을 반환합니다. */
+
+	static void *
+	thread_start(void *arg)
+	{
+	   struct thread_info *tinfo = arg;
+	   char *uargv;
+
+	   printf("스레드 %d: 스택 상단 주변 %p; argv_string=%s\n",
+		   tinfo->thread_num, &p, tinfo->argv_string);
+
+	   uargv = strdup(tinfo->argv_string);
+	   if (uargv == NULL)
+		handle_error("strdup");
+
+	   for (char *p = uargv; *p != '\0'; p++)
+		*p = toupper(*p);
+
+	   return uargv;
+	}
+
+	int
+	main(int argc, char *argv[])
+	{
+	   int s, opt, num_threads;
+	   pthread_attr_t attr;
+	   size_t stack_size;
+	   void *res;
+
+	   /* "-s" 옵션은 스레드의 스택 크기를 지정합니다. */
+
+	   stack_size = -1;
+	   while ((opt = getopt(argc, argv, "s:")) != -1) {
+		switch (opt) {
+		case 's':
+		   stack_size = strtoul(optarg, NULL, 0);
+		   break;
+
+		default:
+		   fprintf(stderr, "사용법: %s [-s stack-size] arg...\n",
+			   argv[0]);
+		   exit(EXIT_FAILURE);
+		}
+	   }
+
+	   num_threads = argc - optind;
+
+	   /* 스레드 생성 속성 초기화 */
+
+	   s = pthread_attr_init(&attr);
+	   if (s != 0)
+		handle_error_en(s, "pthread_attr_init");
+
+	   if (stack_size > 0) {
+		s = pthread_attr_setstacksize(&attr, stack_size);
+		if (s != 0)
+		   handle_error_en(s, "pthread_attr_setstacksize");
+	   }
+
+	   /* pthread_create() 인수를 위한 메모리 할당 */
+
+	   struct thread_info *tinfo = calloc(num_threads, sizeof(*tinfo));
+	   if (tinfo == NULL)
+		handle_error("calloc");
+
+	   /* 각 명령 줄 인수에 대해 하나의 스레드 생성 */
+
+	   for (int tnum = 0; tnum < num_threads; tnum++) {
+		tinfo[tnum].thread_num = tnum + 1;
+		tinfo[tnum].argv_string = argv[optind + tnum];
+
+		/* pthread_create() 호출은 스레드 ID를 tinfo[]의 해당 요소에 저장합니다. */
+
+		s = pthread_create(&tinfo[tnum].thread_id, &attr,
+				  &thread_start, &tinfo[tnum]);
+		if (s != 0)
+		   handle_error_en(s, "pthread_create");
+	   }
+
+	   /* 더 이상 필요하지 않으므로 스레드 속성 객체를 파괴합니다. */
+
+	   s = pthread_attr_destroy(&attr);
+	   if (s != 0)
+		handle_error_en(s, "pthread_attr_destroy");
+
+	   /* 이제 각 스레드와 결합하고 반환된 값을 표시합니다. */
+
+	   for (int tnum = 0; tnum < num_threads; tnum++) {
+		s = pthread_join(tinfo[tnum].thread_id, &res);
+		if (s != 0)
+		   handle_error_en(s, "pthread_join");
+
+		printf("스레드 %d과 결합되었습니다; 반환된 값은 %s입니다.\n",
+			tinfo[tnum].thread_num, (char *) res);
+		free(res);      /* 스레드가 할당한 메모리 해제 */
+	   }
+
+	   free(tinfo);
+	   exit(EXIT_SUCCESS);
+	}
+
+참고 사항
+	getrlimit(2), pthread_attr_init(3), pthread_cancel(3), pthread_detach(3), pthread_equal(3),
+	pthread_exit(3), pthread_getattr_np(3), pthread_join(3), pthread_self(3),
+	pthread_setattr_default_np(3), pthreads(7)
+
+저작권
+	이 페이지는 Linux man-pages 프로젝트의 5.10 릴리스의 일부입니다. 프로젝트에 대한 설명, 버그 보고 정보 및 이 페이지의 최신 버전은 다음 위치에서 찾을 수 있습니다.
+	https://www.kernel.org/doc/man-pages/.
