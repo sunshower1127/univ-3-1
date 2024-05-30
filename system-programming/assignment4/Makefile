@@ -1,10 +1,15 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -lm -lpthread
 
-all: prime
+all: 20203042-cv 20203042-mut 20203042-sem
 
-prime: prime.c
-	$(CC) $(CFLAGS) -o $@ $^
+20203042-cv: 20203042-cv.c
+	$(CC) -o 20203042-cv 20203042-cv.c -lm
+
+20203042-mut: 20203042-mut.c
+	$(CC) -o 20203042-mut 20203042-mut.c -lm
+
+20203042-sem: 20203042-sem.c
+	$(CC) -o 20203042-sem 20203042-sem.c -lm
 
 clean:
-	rm -f prime
+	rm -f 20203042-cv 20203042-mut 20203042-sem
