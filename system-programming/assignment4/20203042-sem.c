@@ -1,13 +1,16 @@
 #include <stdio.h>
 #include <math.h>
 #include <pthread.h>
+#include <semaphore.h>
 
 #define THREADS 4
-#define N 3000
+#define N 1000
 
 int primes[N];
 int pflag[N];
 int total = 0;
+
+sem_t sem;
 
 int is_prime(int v)
 {
@@ -36,11 +39,13 @@ void *work(void *arg)
     end = start + N / THREADS;
     for (i = start; i < end; i++)
     {
+        sem_wait(&sem);
         if (is_prime(i))
         {
             primes[total] = i;
             total++;
         }
+        sem_post(&sem);
     }
     return NULL;
 }
@@ -50,8 +55,10 @@ int main(int argn, char **argv)
     int i;
     pthread_t tids[THREADS - 1];
 
+    sem_init(&sem, 0, 1);
+
     int nums[THREADS];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < THREADS; i++)
     {
         nums[i] = i;
     }
@@ -66,6 +73,12 @@ int main(int argn, char **argv)
     }
     i = THREADS - 1;
     work((void *)&nums[i]);
+
+    for (i = 0; i < THREADS - 1; i++)
+    {
+        pthread_join(tids[i], NULL);
+    }
+    sem_destroy(&sem);
 
     printf("Number of prime numbers between 2 and %d: %d\n",
            N, total);

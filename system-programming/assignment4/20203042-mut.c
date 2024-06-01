@@ -10,7 +10,7 @@ int primes[N];
 int pflag[N];
 int total = 0;
 
-pthread_mutex_t mutex;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int is_prime(int v)
 {
@@ -55,7 +55,7 @@ int main(int argn, char **argv)
     int i;
     pthread_t tids[THREADS - 1];
 
-    pthread_mutex_init(&mutex, NULL);
+    // pthread_mutex_init(&mutex, NULL);
 
     int nums[THREADS];
     for (i = 0; i < THREADS; i++)
@@ -74,14 +74,19 @@ int main(int argn, char **argv)
     i = THREADS - 1;
     work((void *)&nums[i]);
 
+    for (i = 0; i < THREADS - 1; i++)
+    {
+        pthread_join(tids[i], NULL);
+    }
+
+    pthread_mutex_destroy(&mutex);
+
     printf("Number of prime numbers between 2 and %d: %d\n",
            N, total);
     for (i = 0; i < total; i++)
     {
         printf("%d\n", primes[i]);
     }
-
-    pthread_mutex_destroy(&mutex);
 
     return 0;
 }

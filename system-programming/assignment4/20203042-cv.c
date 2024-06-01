@@ -9,6 +9,9 @@ int primes[N];
 int pflag[N];
 int total = 0;
 
+pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
 int is_prime(int v)
 {
     int i;
@@ -36,6 +39,7 @@ void *work(void *arg)
     end = start + N / THREADS;
     for (i = start; i < end; i++)
     {
+
         if (is_prime(i))
         {
             primes[total] = i;
@@ -51,7 +55,7 @@ int main(int argn, char **argv)
     pthread_t tids[THREADS - 1];
 
     int nums[THREADS];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < THREADS; i++)
     {
         nums[i] = i;
     }

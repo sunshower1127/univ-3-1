@@ -51,7 +51,7 @@ int main(int argn, char **argv)
     pthread_t tids[THREADS - 1];
 
     int nums[THREADS];
-    for (i = 0; i < N; i++)
+    for (i = 0; i < THREADS; i++)
     {
         nums[i] = i;
     }
