@@ -4,7 +4,7 @@
 #include <semaphore.h>
 
 #define THREADS 4
-#define N 1000
+#define N 3000
 
 int primes[N];
 int pflag[N];
@@ -39,12 +39,14 @@ void *work(void *arg)
     end = start + N / THREADS;
     for (i = start; i < end; i++)
     {
+        // sem값 1 감소 -> 0이면 대기
         sem_wait(&sem);
         if (is_prime(i))
         {
             primes[total] = i;
             total++;
         }
+        // sem값 1 증가 -> 대기중인 스레드 깨움
         sem_post(&sem);
     }
     return NULL;
@@ -55,6 +57,7 @@ int main(int argn, char **argv)
     int i;
     pthread_t tids[THREADS - 1];
 
+    // sem = 1
     sem_init(&sem, 0, 1);
 
     int nums[THREADS];
@@ -74,10 +77,13 @@ int main(int argn, char **argv)
     i = THREADS - 1;
     work((void *)&nums[i]);
 
+    // 쓰레드 종료 대기
     for (i = 0; i < THREADS - 1; i++)
     {
         pthread_join(tids[i], NULL);
     }
+
+    // sem 해제
     sem_destroy(&sem);
 
     printf("Number of prime numbers between 2 and %d: %d\n",

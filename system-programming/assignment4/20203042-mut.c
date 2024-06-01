@@ -3,13 +3,13 @@
 #include <pthread.h>
 
 #define THREADS 4
-// #define N 3000
-#define N 1000
+#define N 3000
 
 int primes[N];
 int pflag[N];
 int total = 0;
 
+// mutex STATIC 초기화
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 int is_prime(int v)
@@ -39,12 +39,14 @@ void *work(void *arg)
     end = start + N / THREADS;
     for (i = start; i < end; i++)
     {
+        // mutex lock
         pthread_mutex_lock(&mutex);
         if (is_prime(i))
         {
             primes[total] = i;
             total++;
         }
+        // mutex unlock
         pthread_mutex_unlock(&mutex);
     }
     return NULL;
@@ -55,6 +57,7 @@ int main(int argn, char **argv)
     int i;
     pthread_t tids[THREADS - 1];
 
+    // mutex 동적 초기화
     // pthread_mutex_init(&mutex, NULL);
 
     int nums[THREADS];
@@ -74,11 +77,13 @@ int main(int argn, char **argv)
     i = THREADS - 1;
     work((void *)&nums[i]);
 
+    // 쓰레드 종료 대기
     for (i = 0; i < THREADS - 1; i++)
     {
         pthread_join(tids[i], NULL);
     }
 
+    // mutex 해제
     pthread_mutex_destroy(&mutex);
 
     printf("Number of prime numbers between 2 and %d: %d\n",

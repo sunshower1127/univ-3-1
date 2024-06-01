@@ -12,6 +12,8 @@ int total = 0;
 pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
+int done = 0;
+
 int is_prime(int v)
 {
     int i;
@@ -39,13 +41,21 @@ void *work(void *arg)
     end = start + N / THREADS;
     for (i = start; i < end; i++)
     {
-
+        pthread_mutex_lock(&mutex);
         if (is_prime(i))
         {
             primes[total] = i;
             total++;
         }
+        pthread_mutex_unlock(&mutex);
     }
+
+    // 현재 쓰레드가 종료되었음을 알림
+    pthread_mutex_lock(&mutex);
+    done++;
+    pthread_cond_signal(&cond);
+    pthread_mutex_unlock(&mutex);
+
     return NULL;
 }
 
@@ -70,6 +80,17 @@ int main(int argn, char **argv)
     }
     i = THREADS - 1;
     work((void *)&nums[i]);
+
+    // 쓰레드 종료 대기
+    pthread_mutex_lock(&mutex);
+    while (done < THREADS)
+    {
+        pthread_cond_wait(&cond, &mutex);
+    }
+    pthread_mutex_unlock(&mutex);
+
+    pthread_mutex_destroy(&mutex);
+    pthread_cond_destroy(&cond);
 
     printf("Number of prime numbers between 2 and %d: %d\n",
            N, total);
