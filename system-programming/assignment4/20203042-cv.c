@@ -63,7 +63,6 @@ int main(int argn, char **argv)
 {
     int i;
     pthread_t tids[THREADS - 1];
-
     int nums[THREADS];
     for (i = 0; i < THREADS; i++)
     {
